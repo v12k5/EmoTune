@@ -1,0 +1,12 @@
+flask
+joblib
+numpy
+pandas
+scikit-learn
+opencv-python
+scipy
+scikit-image
+gunicorn
+mediapipe
+onnxruntime
+pytube

@@ -1,0 +1,38 @@
+
+# Gradio
+.gradio/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDEs and editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS-generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Data and Models
+# The 'dataset' and 'models' directories are often large and not suitable for Git.
+# Consider using a data versioning tool like DVC or storing them in a cloud storage service.
+dataset/
+models/
