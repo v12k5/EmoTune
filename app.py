@@ -38,10 +38,6 @@ except FileNotFoundError:
     sess = None
     scaler = None
 
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host='0.0.0.0', port=port)
-
 last_emotion = ""
 mp_face_mesh = mp.solutions.face_mesh
 face_mesh = mp_face_mesh.FaceMesh()
@@ -66,8 +62,6 @@ EMOTION_SONGS = {
         "vjABLFK_wPY"
     ]
 }
-
-
 
 # Store the last played song for each emotion
 last_played_song = {}
