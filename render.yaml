@@ -3,8 +3,9 @@ services:
     name: emotion-based-music-recommendation
     env: python
     plan: free
+    # A comment to force re-parsing
     buildCommand: "pip install -r requirements.txt"
     startCommand: "gunicorn --chdir src app:app"
     envVars:
       - key: PYTHON_VERSION
-        value: 3.11.4
+        value: 3.11
