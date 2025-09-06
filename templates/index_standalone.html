@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Local Emotion Music Finder</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .loader {
+            border-top-color: #3498db;
+            -webkit-animation: spin 1s linear infinite;
+            animation: spin 1s linear infinite;
+        }
+        @-webkit-keyframes spin {
+            0% { -webkit-transform: rotate(0deg); }
+            100% { -webkit-transform: rotate(360deg); }
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white flex flex-col items-center justify-center min-h-screen p-4">
+
+    <div class="w-full max-w-4xl mx-auto bg-gray-800 rounded-2xl shadow-2xl p-6 md:p-8">
+        <div class="text-center mb-6">
+            <h1 class="text-3xl md:text-4xl font-bold text-white">Emotion-Powered YouTube Search</h1>
+            <p class="text-gray-400 mt-2">Find the perfect music for your mood on YouTube.</p>
+        </div>
+
+        <!-- Video and Emotion Display -->
+        <div class="relative w-full aspect-video bg-black rounded-lg overflow-hidden mb-6 shadow-lg">
+            <video id="webcam" class="w-full h-full object-cover" autoplay playsinline></video>
+            <canvas id="overlay" class="absolute top-0 left-0 w-full h-full"></canvas>
+            <div id="loading" class="absolute inset-0 bg-black bg-opacity-75 flex flex-col items-center justify-center">
+                <div class="loader ease-linear rounded-full border-8 border-t-8 border-gray-200 h-24 w-24 mb-4"></div>
+                <p id="loading-text" class="text-lg text-white">Initializing Camera & AI Model...</p>
+            </div>
+            <div id="emotion-display" class="absolute bottom-4 left-4 bg-black bg-opacity-60 text-white text-xl font-semibold px-4 py-2 rounded-lg hidden">
+                Emotion: <span id="emotion-text">...</span>
+            </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-4 mb-6">
+            <button id="start-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition duration-300 w-full sm:w-auto">Start Emotion Detection</button>
+            <button id="stop-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-lg transition duration-300 w-full sm:w-auto" disabled>Stop Detection</button>
+        </div>
+
+        <!-- Status Display -->
+        <div id="status-display" class="bg-gray-700 p-4 rounded-lg shadow-md text-center">
+             <p>Click "Start" to begin.</p>
+        </div>
+    </div>
+
+    <!-- Modal for errors -->
+    <div id="error-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+        <div class="bg-white text-gray-800 p-6 rounded-lg shadow-lg max-w-sm w-full">
+            <h2 class="text-xl font-bold mb-4">Error</h2>
+            <p id="error-message"></p>
+            <button id="close-modal-btn" class="mt-4 bg-red-500 text-white py-2 px-4 rounded-lg">Close</button>
+        </div>
+    </div>
+
+    <script>
+        const videoElement = document.getElementById('webcam');
+        const canvasElement = document.getElementById('overlay');
+        const canvasCtx = canvasElement.getContext('2d');
+        const loadingDiv = document.getElementById('loading');
+        const loadingText = document.getElementById('loading-text');
+        const emotionText = document.getElementById('emotion-text');
+        const emotionDisplay = document.getElementById('emotion-display');
+        const startBtn = document.getElementById('start-btn');
+        const stopBtn = document.getElementById('stop-btn');
+        const statusDisplay = document.getElementById('status-display');
+        const errorModal = document.getElementById('error-modal');
+        const errorMessage = document.getElementById('error-message');
+        const closeModalBtn = document.getElementById('close-modal-btn');
+
+        let faceMesh;
+        let ortSession;
+        let scalerMean;
+        let scalerScale;
+        let isDetecting = false;
+        let lastSearchedEmotion = null;
+
+        const emotions = ['anger', 'happy', 'sad', 'surprise'];
+
+        // --- Error Handling ---
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorModal.classList.remove('hidden');
+            loadingDiv.classList.add('hidden');
+        }
+        closeModalBtn.addEventListener('click', () => errorModal.classList.add('hidden'));
+
+        // --- YouTube Search ---
+        function searchYoutubeForEmotion(emotion) {
+            if (emotion === lastSearchedEmotion) {
+                return; // Don't search again for the same emotion
+            }
+            lastSearchedEmotion = emotion;
+            const searchQuery = `${emotion} songs`;
+            const youtubeUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(searchQuery)}`;
+            
+            statusDisplay.innerHTML = `<p>Detected: <strong>${emotion}</strong>. Opening YouTube search for "${searchQuery}"...</p>`;
+            window.open(youtubeUrl, '_blank');
+        }
+
+        // --- Model and Feature Extraction ---
+        async function loadModelAndScaler() {
+            try {
+                loadingText.textContent = 'Loading AI Model...';
+                // **IMPORTANT**: These file paths must match your local folder structure.
+                const modelUrl = 'models/rf_emotion.onnx';
+                const scalerUrl = 'models/scaler.json';
+
+                ortSession = await ort.InferenceSession.create(modelUrl);
+                
+                const response = await fetch(scalerUrl);
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch scaler.json: ${response.statusText}`);
+                }
+                const scalerData = await response.json();
+                scalerMean = scalerData.mean_;
+                scalerScale = scalerData.scale_;
+
+                console.log("Model and scaler loaded successfully.");
+            } catch (error) {
+                showError(`Failed to load model/scaler: ${error.message}. Make sure rf_emotion.onnx and scaler.json are in a 'models' folder.`);
+                throw error;
+            }
+        }
+
+        function buildFeatures(landmarks, imageWidth, imageHeight) {
+            const features = [];
+            for (const landmark of landmarks) {
+                features.push(landmark.x * imageWidth, landmark.y * imageHeight);
+            }
+            return features;
+        }
+
+        function scaleFeatures(features) {
+            if (!scalerMean || !scalerScale) return features;
+            return features.map((val, i) => (val - scalerMean[i]) / scalerScale[i]);
+        }
+        
+        // --- Main Application Logic ---
+        async function onResults(results) {
+            canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+
+            if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0 && ortSession) {
+                const landmarks = results.multiFaceLandmarks[0];
+                const w = videoElement.videoWidth;
+                const h = videoElement.videoHeight;
+
+                if (w === 0 || h === 0) return;
+
+                const features = buildFeatures(landmarks, w, h);
+                const scaledFeatures = scaleFeatures(features);
+
+                try {
+                    const tensor = new ort.Tensor('float32', scaledFeatures, [1, scaledFeatures.length]);
+                    const feeds = { 'float_input': tensor };
+                    const modelResults = await ortSession.run(feeds);
+                    
+                    const prediction = modelResults.output_label.data[0];
+                    const predictedEmotion = emotions[prediction];
+                    emotionText.textContent = predictedEmotion;
+
+                    searchYoutubeForEmotion(predictedEmotion);
+
+                } catch(e) {
+                    console.error("Error during model inference:", e);
+                }
+            }
+        }
+
+        async function initializeDetection() {
+            await loadModelAndScaler();
+            
+            loadingText.textContent = 'Initializing Camera...';
+            // **FIX:** Corrected the typo in the URL from "@medipe" to "@mediapipe"
+            faceMesh = new FaceMesh({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`});
+            faceMesh.setOptions({ maxNumFaces: 1, refineLandmarks: true, minDetectionConfidence: 0.5, minTrackingConfidence: 0.5 });
+            faceMesh.onResults(onResults);
+
+            const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 1280, height: 720 } });
+            videoElement.srcObject = stream;
+            
+            return new Promise((resolve, reject) => {
+                videoElement.onloadedmetadata = () => {
+                    videoElement.play();
+                    canvasElement.width = videoElement.videoWidth;
+                    canvasElement.height = videoElement.videoHeight;
+                    loadingDiv.classList.add('hidden');
+                    emotionDisplay.classList.remove('hidden');
+                    resolve();
+                };
+                videoElement.onerror = (err) => {
+                    reject(err);
+                }
+            });
+        }
+
+        async function detectionLoop() {
+            if (!isDetecting || videoElement.paused || videoElement.ended) return;
+            await faceMesh.send({image: videoElement});
+            requestAnimationFrame(detectionLoop);
+        }
+
+        // --- Event Listeners ---
+        startBtn.addEventListener('click', async () => {
+            if (isDetecting) return;
+            startBtn.disabled = true;
+            stopBtn.disabled = true;
+            loadingDiv.style.display = 'flex';
+            loadingDiv.classList.remove('hidden');
+            statusDisplay.innerHTML = `<p>Starting detection...</p>`;
+
+            try {
+                await initializeDetection();
+                isDetecting = true;
+                detectionLoop();
+                stopBtn.disabled = false;
+                statusDisplay.innerHTML = `<p>Detection is active. Look at the camera.</p>`;
+            } catch (error) {
+                showError(`Initialization failed: ${error.message}`);
+                startBtn.disabled = false;
+            }
+        });
+
+        stopBtn.addEventListener('click', () => {
+            isDetecting = false;
+            lastSearchedEmotion = null; // Reset for next start
+            const stream = videoElement.srcObject;
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                videoElement.srcObject = null;
+            }
+            startBtn.disabled = false;
+            stopBtn.disabled = true;
+            emotionText.textContent = '...';
+            statusDisplay.innerHTML = `<p>Detection stopped. Click "Start" to begin again.</p>`;
+        });
+    </script>
+</body>
+</html>
