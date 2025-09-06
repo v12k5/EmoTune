@@ -35,4 +35,3 @@ Thumbs.db
 # The 'dataset' and 'models' directories are often large and not suitable for Git.
 # Consider using a data versioning tool like DVC or storing them in a cloud storage service.
 dataset/
-models/
