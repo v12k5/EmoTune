@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>About | EmoTune 🎶</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-gray-100 font-[Poppins] leading-relaxed">
+  
+  <!-- Navbar -->
+  <nav class="flex justify-between items-center px-8 bg-black/80 backdrop-blur-md" style="height: 10vh;">
+    <h1 class="text-2xl font-bold text-yellow-400">EmoTune 🎶</h1>
+    <a href="/" class="hover:text-yellow-400">← Back to Home</a>
+  </nav>
+
+  <!-- Content -->
+  <main class="max-w-4xl mx-auto p-8 mt-6">
+    <h1 class="text-4xl font-bold text-yellow-400 mb-6">Emotion-Based Music Recommendation</h1>
+    
+    <p class="mb-6">
+      This project is a real-time emotion-based music recommendation system. Using your webcam, it detects your facial emotion 
+      and suggests a song that matches your mood.
+    </p>
+
+    <h2 class="text-2xl font-semibold mt-8 mb-4">How it Works</h2>
+    <ol class="list-decimal list-inside space-y-2 mb-6">
+      <li><b>Face Detection</b>: Captures video from your webcam and uses a face mesh to identify facial landmarks.</li>
+      <li><b>Emotion Recognition</b>: The facial landmarks are fed into a pre-trained machine learning model to predict your emotion (e.g., happy, sad, angry).</li>
+      <li><b>Song Recommendation</b>: Based on the detected emotion, a random song from a curated list is selected and played using an embedded YouTube player.</li>
+    </ol>
+
+    <div class="flex justify-center my-8">
+      <img src="https://raw.githubusercontent.com/v12k5/Emotion-based-music-recommendation/main/diagram.png" alt="System Workflow" class="rounded-lg shadow-lg w-full md:w-3/4">
+    </div>
+
+    <h2 class="text-2xl font-semibold mt-8 mb-4">Features</h2>
+    <ul class="list-disc list-inside space-y-2 mb-6">
+      <li><b>Real-time Emotion Detection</b>: Instantly detects your emotion from your webcam feed.</li>
+      <li><b>Dynamic Music Recommendations</b>: Suggests music that aligns with your current mood.</li>
+      <li><b>Interactive Web Interface</b>: A user-friendly interface to view the video feed, detected emotion, and control music playback.</li>
+      <li><b>YouTube Integration</b>: Seamlessly embeds and plays recommended songs from YouTube.</li>
+    </ul>
+
+    <h2 class="text-2xl font-semibold mt-8 mb-4">Technology Stack</h2>
+    <ul class="list-disc list-inside space-y-2 mb-6">
+      <li><b>Backend</b>: Flask (Python)</li>
+      <li><b>Frontend</b>: HTML, CSS, JavaScript</li>
+      <li><b>Machine Learning</b>: Scikit-learn, ONNX Runtime, MediaPipe</li>
+      <li><b>Libraries</b>: OpenCV, NumPy, Pandas</li>
+    </ul>
+  </main>
+
+  <!-- Footer -->
+  <footer class="text-center p-4 bg-black/80 text-gray-400 mt-10">
+    Made with ❤️ using ML & Web Tech
+  </footer>
+
+</body>
+</html>

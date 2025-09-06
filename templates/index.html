@@ -1,47 +1,67 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SoulStreamr</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EmoTune 🎶</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      background: url("https://cdn.shopify.com/s/files/1/0657/3100/2634/files/papierpeintmusique-casquesurfondcolore.png?v=1715586708") no-repeat center center fixed;
+      background-size: cover;
+    }
+  </style>
 </head>
-<body>
-    <div class="container">
-        <div class="left-column">
-            <div class="header">
-                <h1>SoulStreamr</h1>
-                <p>Your personal emotion-based music player</p>
-            </div>
-            <div class="video-container">
-                <img src="{{ url_for('video_feed') }}" width="640" height="480">
-            </div>
-            <div class="emotion-container">
-                <h2>Current Emotion:</h2>
-                <p id="emotion">-</p>
-            </div>
-            <div class="controls-container">
-                <button id="predict-song" disabled>Detect Emotion & Play Song</button>
-                <button id="play-pause" disabled>Play</button>
-                <div class="volume-container">
-                    <label for="volume">Volume:</label>
-                    <input type="range" id="volume" min="0" max="100" value="50" 
-                           onchange="setVolume(this.value)">
-                    <span id="volume-display">50%</span>
-                </div>
-            </div>
-        </div>
-        <div class="right-column">
-            <div id="player-container">
-                <div id="player"></div>
-            </div>
-        </div>
+<body class="text-white font-[Poppins] min-h-screen flex flex-col">
+
+  <!-- Navbar -->
+  <nav class="flex justify-between items-center px-8 bg-black/60 fixed w-full top-0 backdrop-blur-md" style="height: 10vh;">
+    <h1 class="text-3xl font-bold">EmoTune 🎶</h1>
+    <div class="space-x-6">
+      <a href="/" class="hover:text-yellow-400 text-lg">Home</a>
+      <a href="/about" class="hover:text-yellow-400 text-lg">About</a>
     </div>
+  </nav>
+
+  <!-- Main Section -->
+  <main class="flex flex-col md:flex-row justify-center items-center flex-grow mt-[12vh] gap-10">
     
-    <!-- Load YouTube API -->
-    <script src="https://www.youtube.com/iframe_api"></script>
-    <!-- Load your script after YouTube API -->
-    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <!-- Webcam Section -->
+    <div class="bg-black/60 p-4 rounded-2xl shadow-lg w-80 text-center">
+      <video id="video" autoplay playsinline class="rounded-xl w-full"></video>
+      <canvas id="canvas" width="640" height="480" style="display:none;"></canvas>
+    </div>
+
+    <!-- Prediction Section -->
+    <div class="bg-black/60 p-6 rounded-2xl shadow-lg w-80 text-center">
+      <h2 class="text-xl font-semibold">Detected Emotion</h2>
+      <p id="emotion" class="text-3xl font-bold mt-2 text-yellow-400">-</p>
+      <button id="predict-song" class="mt-4 px-6 py-2 bg-blue-500 rounded-xl hover:bg-blue-600">
+        Play Recommended Song 🎵
+      </button>
+    </div>
+  </main>
+
+  <!-- Music Player -->
+  <section class="text-center mt-10">
+    <h3 class="text-xl font-bold mb-2">Now Playing</h3>
+    <div id="player" class="mx-auto rounded-xl shadow-lg"></div>
+  </section>
+
+  <!-- About -->
+  <section id="about" class="p-10 text-center mt-10 bg-black/50 rounded-2xl mx-6">
+    <h3 class="text-2xl font-bold mb-4">About EmoTune</h3>
+    <p class="text-gray-200 max-w-xl mx-auto">
+      EmoTune uses real-time facial emotion detection powered by Machine Learning (Random Forest) to recommend music from YouTube that matches your mood.
+    </p>
+  </section>
+
+  <!-- Footer -->
+  <footer class="text-center p-4 text-gray-200 mt-10 bg-black/60">
+    Made with ❤️ using ML & Web Tech | <a href="https://github.com/" class="hover:text-white">GitHub</a>
+  </footer>
+
+  <script src="https://www.youtube.com/iframe_api"></script>
+  <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>

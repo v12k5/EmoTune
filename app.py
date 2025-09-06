@@ -2,7 +2,7 @@ import sys
 import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), 'src')))
 
-from flask import Flask, render_template, Response, jsonify
+from flask import Flask, render_template, Response, jsonify, request
 import cv2
 import joblib
 import numpy as np
@@ -13,6 +13,9 @@ from sklearn.preprocessing import StandardScaler
 from features import build_features
 import onnxruntime as rt
 import random
+import base64
+from io import BytesIO
+from PIL import Image
 
 app = Flask(__name__)
 
@@ -38,39 +41,31 @@ last_emotion = ""
 mp_face_mesh = mp.solutions.face_mesh
 face_mesh = mp_face_mesh.FaceMesh()
 
-# Emotion to song mapping (you can expand this with more videos)
+# Emotion to song mapping (only working embed-safe YouTube IDs)
 EMOTION_SONGS = {
     "happy": [
-        "dQw4w9WgXcQ",  # Rick Astley - Never Gonna Give You Up
-        "ZbZSe6N_BXs",  # Happy by Pharrell Williams
-        "Y66j_BUCBMY"   # Happy songs
+        "FJDfG7EzBeE",
+        "kG1jb6zRn10"
     ],
     "sad": [
-        "4fndeDfaWCg",  # Somebody That I Used to Know
-        "hLQl3WQQoQ0",  # Someone Like You - Adele
-        "SlPhMPnQ58k"   # Sad songs
+        "_l5El5n8qmg",
+        "YMmzolJNjOM"
     ],
     "angry": [
-        "WNIPqafd4As",  # Breaking Benjamin
-        "04F4xlWSFh0",  # Rage Against The Machine
-        "CSvFpBOe8eY"   # Angry music
+        "kXYiU_JCYtU",  # Linkin Park - In The End
+        "ScNNfyq3d_w",  # Disturbed - Down With The Sickness
+        "hTWKbfoikeg"   # Nirvana - Smells Like Teen Spirit
     ],
-    "surprised": [
-        "kJQP7kiw5Fk",  # Despacito
-        "fJ9rUzIMcZQ",  # Upbeat music
-        "pRpeEdMmmQ0"   # Surprise songs
-    ],
-    "neutral": [
-        "kXYiU_JCYtU",  # Relaxing music
-        "jfKfPfyJRdk",  # Lofi hip hop
-        "5qap5aO4i9A"   # Chill music
-    ],
-    "fear": [
-        "sOnqjkJTMaA",  # Thriller - Michael Jackson
-        "Zi_XLOBDo_Y",  # Scary music
-        "hzPpWInAiOg"   # Horror themes
+    "surprise": [
+        "rlMtaSs7wfs",
+        "vjABLFK_wPY"
     ]
 }
+
+
+
+# Store the last played song for each emotion
+last_played_song = {}
 
 def predict_emotion(img):
     """Predict emotion from image"""
@@ -90,41 +85,47 @@ def predict_emotion(img):
             prediction = sess.run([label_name], {input_name: features})[0]
             last_emotion = str(prediction[0])
 
-def gen_frames():
-    cap = cv2.VideoCapture(0)
-    while True:
-        success, frame = cap.read()
-        if not success:
-            break
-        else:
-            predict_emotion(frame)
-            ret, buffer = cv2.imencode(".jpg", frame)
-            frame = buffer.tobytes()
-            yield (b"--frame\r\n" b"Content-Type: image/jpeg\r\n\r\n" + frame + b"\r\n")
-
 @app.route("/")
 def index():
     return render_template("index.html")
 
-@app.route("/video_feed")
-def video_feed():
-    return Response(gen_frames(), mimetype="multipart/x-mixed-replace; boundary=frame")
+@app.route("/about")
+def about():
+    return render_template("about.html")
 
-@app.route("/emotion")
-def emotion():
+@app.route("/process_image", methods=['POST'])
+def process_image():
+    data = request.get_json()
+    img_data = data['image'].split(',')[1]
+    img = Image.open(BytesIO(base64.b64decode(img_data)))
+    img = cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
+    predict_emotion(img)
     return jsonify({"emotion": last_emotion})
 
 @app.route("/get_song/<emotion>")
 def get_song(emotion):
-    """Get a random song for the given emotion"""
+    """Get a random song for the given emotion, avoiding immediate repetition"""
     emotion_lower = emotion.lower()
     
-    # Default to neutral if emotion not found
+    # Default to happy if emotion not found
     if emotion_lower not in EMOTION_SONGS:
-        emotion_lower = "neutral"
+        emotion_lower = "happy"
     
-    # Pick a random song from the emotion category
-    video_id = random.choice(EMOTION_SONGS[emotion_lower])
+    song_list = EMOTION_SONGS[emotion_lower]
+    
+    # Avoid repeating the last song if possible
+    if len(song_list) > 1 and emotion_lower in last_played_song:
+        last_song = last_played_song[emotion_lower]
+        available_songs = [s for s in song_list if s != last_song]
+        if available_songs:
+            video_id = random.choice(available_songs)
+        else:
+            video_id = random.choice(song_list) # Fallback if all songs are the same
+    else:
+        video_id = random.choice(song_list)
+    
+    # Store the new song as the last played for this emotion
+    last_played_song[emotion_lower] = video_id
     
     return jsonify({
         "video_id": video_id,
