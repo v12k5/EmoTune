@@ -19,23 +19,28 @@ from PIL import Image
 
 app = Flask(__name__)
 
+base_dir = os.path.dirname(os.path.abspath(__file__))
+model_path = os.path.join(base_dir, 'models', 'rf_emotion.onnx')
+scaler_path = os.path.join(base_dir, 'models', 'scaler.json')
+
 # Load the model and scaler
 try:
-    sess = rt.InferenceSession("models/rf_emotion.onnx")
+    sess = rt.InferenceSession(model_path)
     input_name = sess.get_inputs()[0].name
     label_name = sess.get_outputs()[0].name
 
-    try:
-        scaler = joblib.load("models/scaler.joblib")
-    except FileNotFoundError:
-        with open("models/scaler.json", 'r') as f:
-            scaler_data = json.load(f)
-        scaler = StandardScaler()
-        scaler.mean_ = np.array(scaler_data['mean_'])
-        scaler.scale_ = np.array(scaler_data['scale_'])
+    with open(scaler_path, 'r') as f:
+        scaler_data = json.load(f)
+    scaler = StandardScaler()
+    scaler.mean_ = np.array(scaler_data['mean_'])
+    scaler.scale_ = np.array(scaler_data['scale_'])
 except FileNotFoundError:
     sess = None
     scaler = None
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port)
 
 last_emotion = ""
 mp_face_mesh = mp.solutions.face_mesh
@@ -133,4 +138,5 @@ def get_song(emotion):
     })
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port)
