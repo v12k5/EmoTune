@@ -10,6 +10,8 @@ The application uses a machine learning model to classify your emotion from a li
 2.  **Emotion Recognition**: The facial landmarks are fed into a pre-trained machine learning model to predict your emotion (e.g., happy, sad, angry).
 3.  **Song Recommendation**: Based on the detected emotion, the application selects a random song from a curated list and plays it using an embedded YouTube player.
 
+![System Workflow](diagram.png)
+
 ## Features
 
 *   **Real-time Emotion Detection**: Instantly detects your emotion from your webcam feed.
