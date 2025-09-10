@@ -4,7 +4,7 @@ This project is a real-time emotion-based music recommendation system. Using you
 
 ## How it Works
 
-The application uses a machine learning model to classify your emotion from a live video stream. Here's a breakdown of the process:
+The application uses a machine learning model to classify your emotion from a live video stream. Here's a breakdown of the process in clear manner:
 
 1.  **Face Detection**: It captures video from your webcam and uses a face mesh to identify facial landmarks.
 2.  **Emotion Recognition**: The facial landmarks are fed into a pre-trained machine learning model to predict your emotion (e.g., happy, sad, angry).
