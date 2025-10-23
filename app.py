@@ -2,9 +2,8 @@ import sys
 import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), 'src')))
 
-from flask import Flask, render_template, Response, jsonify, request
+from flask import Flask, render_template, jsonify, request
 import cv2
-import joblib
 import numpy as np
 import pandas as pd
 import json
@@ -16,6 +15,9 @@ import random
 import base64
 from io import BytesIO
 from PIL import Image
+from googleapiclient.discovery import build
+
+YOUTUBE_API_KEY = "AIzaSyBcnfrMBbkBHRKyaq27QYws7AojYruevJ4"  # USE YOUR ACTUAL API KEY
 
 app = Flask(__name__)
 
@@ -23,12 +25,10 @@ base_dir = os.path.dirname(os.path.abspath(__file__))
 model_path = os.path.join(base_dir, 'models', 'rf_emotion.onnx')
 scaler_path = os.path.join(base_dir, 'models', 'scaler.json')
 
-# Load the model and scaler
 try:
     sess = rt.InferenceSession(model_path)
     input_name = sess.get_inputs()[0].name
     label_name = sess.get_outputs()[0].name
-
     with open(scaler_path, 'r') as f:
         scaler_data = json.load(f)
     scaler = StandardScaler()
@@ -42,37 +42,41 @@ last_emotion = ""
 mp_face_mesh = mp.solutions.face_mesh
 face_mesh = mp_face_mesh.FaceMesh()
 
-# Emotion to song mapping (only working embed-safe YouTube IDs)
 EMOTION_SONGS = {
-    "happy": [
-        "FJDfG7EzBeE",
-        "kG1jb6zRn10"
-    ],
-    "sad": [
-        "_l5El5n8qmg",
-        "YMmzolJNjOM"
-    ],
-    "angry": [
-        "kXYiU_JCYtU",  # Linkin Park - In The End
-        "ScNNfyq3d_w",  # Disturbed - Down With The Sickness
-        "hTWKbfoikeg"   # Nirvana - Smells Like Teen Spirit
-    ],
-    "surprise": [
-        "rlMtaSs7wfs",
-        "vjABLFK_wPY"
-    ]
+    "happy": ["FJDfG7EzBeE", "kG1jb6zRn10"],
+    "sad": ["_l5El5n8qmg", "YMmzolJNjOM"],
+    "angry": ["kXYiU_JCYtU", "ScNNfyq3d_w", "hTWKbfoikeg"],
+    "surprise": ["rlMtaSs7wfs", "vjABLFK_wPY"]
 }
 
-# Store the last played song for each emotion
 last_played_song = {}
 
+def youtube_search_by_emotion(emotion, language="telugu", max_results=1):
+    try:
+        youtube = build('youtube', 'v3', developerKey=YOUTUBE_API_KEY)
+        query = f"best {emotion} songs {language}"
+        search_response = youtube.search().list(
+            q=query,
+            part='id,snippet',
+            maxResults=max_results,
+            type='video',
+            videoEmbeddable='true'
+        ).execute()
+        video_ids = [
+            item['id']['videoId']
+            for item in search_response.get('items', [])
+            if 'videoId' in item['id']
+        ]
+        return video_ids
+    except Exception as e:
+        print("YouTube Search error:", e)
+        return []
+
 def predict_emotion(img):
-    """Predict emotion from image"""
     global last_emotion
     if sess is None or scaler is None:
         last_emotion = "Model not found"
         return
-
     results = face_mesh.process(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
     if results.multi_face_landmarks:
         for face_landmarks in results.multi_face_landmarks:
@@ -103,29 +107,13 @@ def process_image():
 
 @app.route("/get_song/<emotion>")
 def get_song(emotion):
-    """Get a random song for the given emotion, avoiding immediate repetition"""
     emotion_lower = emotion.lower()
-    
-    # Default to happy if emotion not found
-    if emotion_lower not in EMOTION_SONGS:
-        emotion_lower = "happy"
-    
-    song_list = EMOTION_SONGS[emotion_lower]
-    
-    # Avoid repeating the last song if possible
-    if len(song_list) > 1 and emotion_lower in last_played_song:
-        last_song = last_played_song[emotion_lower]
-        available_songs = [s for s in song_list if s != last_song]
-        if available_songs:
-            video_id = random.choice(available_songs)
-        else:
-            video_id = random.choice(song_list) # Fallback if all songs are the same
-    else:
-        video_id = random.choice(song_list)
-    
-    # Store the new song as the last played for this emotion
+    user_language = request.args.get("lang", "telugu")
+    video_ids = youtube_search_by_emotion(emotion_lower, language=user_language, max_results=1)
+    if not video_ids:
+        video_ids = EMOTION_SONGS.get(emotion_lower, EMOTION_SONGS["happy"])
+    video_id = video_ids[0] if video_ids else None
     last_played_song[emotion_lower] = video_id
-    
     return jsonify({
         "video_id": video_id,
         "emotion": emotion
