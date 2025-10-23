@@ -1,8 +1,21 @@
-# Emotion-Based Music Recommendation
+<h1 align="center">Emotion-Based Music Recommendation</h1>
 
-This project is a real-time emotion-based music recommendation system. Using your webcam, it detects your facial emotion and suggests a song that matches your mood.
+<p align="center">
+  <img src="https://img.shields.io/badge/Python-3.7%2B-blue.svg" alt="Python Version">
+  <img src="https://img.shields.io/badge/Flask-2.0-blue.svg" alt="Flask Version">
+  <img src="https://img.shields.io/badge/Scikit--learn-0.24-blue.svg" alt="Scikit-learn Version">
+  <img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License">
+</p>
 
-## How it Works
+<p align="center">
+  A real-time emotion-based music recommendation system that detects your facial emotion and suggests a song that matches your mood.
+</p>
+
+<p align="center">
+  <img src="diagram.png" alt="System Workflow" width="100%">
+</p>
+
+## 🎵 How it Works
 
 The application uses a machine learning model to classify your emotion from a live video stream. Here's a breakdown of the process:
 
@@ -10,23 +23,21 @@ The application uses a machine learning model to classify your emotion from a li
 2.  **Emotion Recognition**: The facial landmarks are fed into a pre-trained machine learning model to predict your emotion (e.g., happy, sad, angry).
 3.  **Song Recommendation**: Based on the detected emotion, the application selects a random song from a curated list and plays it using an embedded YouTube player.
 
-![System Workflow](diagram.png)
-
-## Features
+## ✨ Features
 
 *   **Real-time Emotion Detection**: Instantly detects your emotion from your webcam feed.
 *   **Dynamic Music Recommendations**: Suggests music that aligns with your current mood.
 *   **Interactive Web Interface**: A user-friendly interface to view the video feed, detected emotion, and control music playback.
 *   **YouTube Integration**: Seamlessly embeds and plays recommended songs from YouTube.
 
-## Technology Stack
+## 🚀 Technology Stack
 
 *   **Backend**: Flask (Python)
 *   **Frontend**: HTML, CSS, JavaScript
 *   **Machine Learning**: Scikit-learn, ONNX Runtime, MediaPipe
 *   **Libraries**: OpenCV, NumPy, Pandas
 
-## Getting Started
+## 🛠️ Getting Started
 
 ### Prerequisites
 
@@ -64,6 +75,6 @@ The application uses a machine learning model to classify your emotion from a li
 
 3.  **Allow the browser to access your webcam.** The application will start detecting your emotion and recommend a song.
 
-## License
+## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
