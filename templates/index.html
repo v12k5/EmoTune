@@ -25,7 +25,7 @@
 
   <!-- Main Section -->
   <main class="flex flex-col md:flex-row justify-center items-center flex-grow mt-[12vh] gap-10">
-    
+
     <!-- Webcam Section -->
     <div class="bg-black/60 p-4 rounded-2xl shadow-lg w-80 text-center">
       <video id="video" autoplay playsinline class="rounded-xl w-full"></video>
@@ -36,6 +36,16 @@
     <div class="bg-black/60 p-6 rounded-2xl shadow-lg w-80 text-center">
       <h2 class="text-xl font-semibold">Detected Emotion</h2>
       <p id="emotion" class="text-3xl font-bold mt-2 text-yellow-400">-</p>
+      <div class="mt-2">
+        <label for="language" class="text-lg font-semibold">Language:</label>
+        <select id="language" class="rounded-lg px-2 py-1 bg-gray-800 text-yellow-300">
+          <option value="telugu">Telugu</option>
+          <option value="hindi">Hindi</option>
+          <option value="tamil">Tamil</option>
+          <option value="malayalam">Malayalam</option>
+          <option value="english">English</option>
+        </select>
+      </div>
       <button id="predict-song" class="mt-4 px-6 py-2 bg-blue-500 rounded-xl hover:bg-blue-600">
         Play Recommended Song 🎵
       </button>
@@ -61,6 +71,7 @@
     Made with ❤️ using ML & Web Tech | <a href="https://github.com/" class="hover:text-white">GitHub</a>
   </footer>
 
+  <!-- YouTube API and main script -->
   <script src="https://www.youtube.com/iframe_api"></script>
   <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
