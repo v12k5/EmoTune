@@ -5,17 +5,17 @@ let isPlayerReady = false;
 const video = document.getElementById('video');
 const canvas = document.getElementById('canvas');
 const predictButton = document.getElementById('predict-song');
+const languageSelect = document.getElementById('language');
 
 const emotionEmojis = {
     happy: '😄',
     sad: '😢',
     angry: '😠',
-    surprised: '😮',
+    surprise: '😮',
     neutral: '😐',
     fear: '😨'
 };
 
-// Get access to the webcam
 navigator.mediaDevices.getUserMedia({ video: true })
     .then(stream => {
         video.srcObject = stream;
@@ -29,55 +29,57 @@ predictButton.addEventListener('click', () => {
     context.drawImage(video, 0, 0, 640, 480);
     const dataURL = canvas.toDataURL('image/jpeg');
 
-    // Send the image to the server
     fetch('/process_image', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ image: dataURL })
     })
     .then(response => response.json())
     .then(data => {
-        console.log("Emotion data:", data);
         const emotion = data.emotion;
-        const emoji = emotionEmojis[emotion.toLowerCase()] || ''
+        const emoji = emotionEmojis[emotion.toLowerCase()] || '';
         document.getElementById("emotion").innerText = `${emotion} ${emoji}`;
 
         if (emotion && emotion !== "Model not found") {
             currentEmotion = emotion;
-            fetch(`/get_song/${emotion}`)
+            const lang = languageSelect.value;
+            fetch(`/get_song/${emotion}?lang=${lang}`)
                 .then(response => response.json())
                 .then(songData => {
-                    console.log("Song data:", songData);
                     if (songData.video_id) {
-                        player.loadVideoById({
-                            'videoId': songData.video_id,
-                            'startSeconds': 0
-                        });
-                        setTimeout(() => {
-                            player.playVideo();
-                        }, 1000);
+                        if (isPlayerReady && player) {
+                            player.loadVideoById({
+                                'videoId': songData.video_id,
+                                'startSeconds': 0
+                            });
+                            setTimeout(() => {
+                                player.playVideo();
+                            }, 1000);
+                        } else {
+                            createPlayer(songData.video_id);
+                        }
+                    } else {
+                        alert("Could not find a suitable video. Try a different emotion or language!");
                     }
                 });
         }
     });
 });
 
-function onYouTubeIframeAPIReady() {
-    console.log("YouTube API is ready.");
+function createPlayer(videoId) {
     player = new YT.Player('player', {
         height: '315',
         width: '560',
+        videoId: videoId,
         playerVars: {
-            'autoplay': 1,          // Autoplay is handled by the script
-            'controls': 1,          // Show controls
-            'disablekb': 0,         // Enable keyboard controls
-            'enablejsapi': 1,       // Enable JS API
-            'fs': 1,                // Allow fullscreen
-            'modestbranding': 1,    // Modest branding
+            'autoplay': 1,
+            'controls': 1,
+            'disablekb': 0,
+            'enablejsapi': 1,
+            'fs': 1,
+            'modestbranding': 1,
             'origin': window.location.origin,
-            'rel': 0                // Only show related videos from the same channel
+            'rel': 0
         },
         events: {
             'onReady': onPlayerReady,
@@ -87,16 +89,18 @@ function onYouTubeIframeAPIReady() {
     });
 }
 
+function onYouTubeIframeAPIReady() {
+    isPlayerReady = true;
+}
+
 function onPlayerReady(event) {
-    console.log("Player is ready.");
     isPlayerReady = true;
 }
 
 function onPlayerStateChange(event) {
-    console.log("Player state changed:", event.data);
+    // Placeholder for future enhancements.
 }
 
 function onPlayerError(event) {
-    console.log("Player error:", event.data);
-    alert("Error loading video. Please try again.");
+    alert("Error loading video. Please try again or predict a new emotion!");
 }
