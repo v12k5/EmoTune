@@ -11,10 +11,6 @@
   A real-time emotion-based music recommendation system that detects your facial emotion and suggests a song that matches your mood.
 </p>
 
-<p align="center">
-  <img src="diagram.png" alt="System Workflow" width="100%">
-</p>
-
 ## 🎬 Demo
 
 <p align="center">
